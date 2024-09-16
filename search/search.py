@@ -86,7 +86,35 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
+     from util import Stack  # Using the stack provided in util.py
+    
+    # Initialize the fringe (stack) with the start state and an empty list of actions
+    fringe = Stack()
+    start_state = problem.getStartState()
+    fringe.push((start_state, []))  # Stack contains tuples of (state, actions_to_reach_state)
+
+    visited = set()  # Set to keep track of visited states
+
+    # While there are nodes to explore
+    while not fringe.isEmpty():
+        # Pop the current node (state, path) from the stack
+        state, path = fringe.pop()
+
+        # If the current state is the goal, return the path to it
+        if problem.isGoalState(state):
+            return path
+
+        # If the current state has not been visited, explore it
+        if state not in visited:
+            visited.add(state)  # Mark the state as visited
+
+            # Get the successors (state, action, cost) for the current state
+            for successor, action, stepCost in problem.getSuccessors(state):
+                if successor not in visited:
+                    # Push the successor and the updated path (with the new action)
+                    fringe.push((successor, path + [action]))
+
+    return []  # Return an empty list if no solution is found
     util.raiseNotDefined()
 
 def breadthFirstSearch(problem):
