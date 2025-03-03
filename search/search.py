@@ -86,18 +86,103 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from util import Stack  # Stack ensures LIFO (last-in, first-out) behavior
+
+    my_stack = Stack()  # Stack stores (node, path) pairs (tuples of size two)
+    visited = set()  # Tracks visited states, a set of coordinates. 
+
+    my_stack.push((problem.getStartState(), []))  # Start state with an empty path
+
+    while not my_stack.isEmpty():
+        node, path = my_stack.pop()  # Pop the most recent state, store its coordinates (node), and the path to this coordinate (path)
+
+        if problem.isGoalState(node):  # Check if we have reached pacmans final goal. 
+            return path
+
+        if node not in visited:
+            visited.add(node)  # Mark grid location as visited
+            for nextNode, action, _ in problem.getSuccessors(node): # Recall successors returns both state (coordinates), and actions (path), see searchAgents.py
+                if nextNode not in visited:
+                    my_stack.push((nextNode, path + [action]))  # Add the new node, along with the entire path to get there. 
+                    # If we did not add the previous path, we would lose the previous nodes path, and only ever be looking ahead by one action. 
+    return []  # Return empty if no solution found
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from util import Queue # we need Queue for breadth first (FIFO), this is the only key difference from DFS. 
+
+    # Queue format ((node),[path to this node]) #
+    my_q = Queue()
+
+    visited = set()  # Tracks visited states
+ 
+     # Check if initial state is the end goal.
+    # Simply return an empty list in this case, state is already valid. 
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
+    # Push initial state, the initial path is an empty list #
+    my_q.push((problem.getStartState(),[]))
+
+    while not my_q.isEmpty():
+        node, path = my_q.pop()  # Dequeue the oldest state
+
+        if problem.isGoalState(node):  # Goal check
+            return path
+
+        if node not in visited:
+            visited.add(node)  # Mark as visited
+            for nextNode, action, _ in problem.getSuccessors(node):
+                if nextNode not in visited:
+                    my_q.push((nextNode, path + [action]))  # Add new path to queue
+
+    return []  # Return empty if no solution found
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from util import PriorityQueue
+    from util import PriorityQueueWithFunction # we need a priority queue (cost based) for UCS.
+    # Remember: priority queu always returns the next cheapest node...see util.py. 
+      
+    # This creates a priority queue where each item’s priority is determined by a function.
+    # This in line function always extract the 3rd element of the tuple, and that will be the priority (the third element is cost)
+    my_pq = PriorityQueueWithFunction(lambda state: state[2])
+
+    # Create an empty dictionary for visited nodes
+    # It is not a set this time, because we need the node, AND its cost. 
+    # A key,value pair
+    visited = {}
+
+    path = [] # Each node knows the path to its coordinate
+    cost = 0; # Each node has an associated cost, the initial cost is 0. 
+
+     # Check if initial state is the end goal.
+    # Simply return an empty list in this case, state is already valid. 
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
+    # Push initial state, a tuple
+    # Queue format (((node),[path to this node], cost of action),priority) 
+    # We push 4 pieces of info, a tuple (node, path to node, cost)
+    my_pq.push((problem.getStartState(), path, cost))
+
+
+
+    while not my_pq.isEmpty():
+        node, path, cost = my_pq.pop()  # Pops the cheapest node by default (That is priority queues job). 
+
+        if problem.isGoalState(node):  # Goal check
+            return path
+
+        # We may encounter the same node twice, but under cheaper circumstances. I.E we hit the goal, but faster than last time.
+        if node not in visited or cost < visited[node]:
+            visited[node] = cost  # Mark as visited with its cost, OR update the cost with the new cheaper version. 
+            for nextNode, action, nextCost, in problem.getSuccessors(node):
+                my_pq.push((nextNode, path + [action], cost + nextCost))  # Push next state
+                    # We don't just update the path this time, we must also update the cost for each subsequent node. 
+
+    return []  # Return empty if no solution found
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -107,9 +192,38 @@ def nullHeuristic(state, problem=None):
     return 0
 
 def aStarSearch(problem, heuristic=nullHeuristic):
-    """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    """Search the node that has the lowest combined cost (g + h) first."""
+    from util import PriorityQueueWithFunction
+
+    # Define the priority function: f(n) = g(n) + h(n)
+    priorityFunction = lambda item: item[2] + heuristic(item[0], problem)  # f(n) = g(n) + h(n)
+    # Cost + heuristic(node, problem)
+
+    # Initialize the priority queue with this function
+    frontier = PriorityQueueWithFunction(priorityFunction)
+    visited = {}  # Dictionary to track best cost to reach each state
+
+    start_state = problem.getStartState()
+    frontier.push((start_state, [], 0))  # (state, path, g(n))
+
+    while not frontier.isEmpty():
+        state, path, cost = frontier.pop()  # Get node with lowest f(n)
+
+        if problem.isGoalState(state):
+            return path
+
+        if state in visited and visited[state] <= cost:
+            continue
+
+        visited[state] = cost  # Mark this state with the best cost
+
+        for successor, action, step_cost in problem.getSuccessors(state):
+            new_cost = cost + step_cost  # g(n)
+            frontier.push((successor, path + [action], new_cost))  # No need to specify priority explicitly!
+
+    return []  # No solution found
+
+
 
 
 # Abbreviations
